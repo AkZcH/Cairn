@@ -1,8 +1,19 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from app.db import close_pool, get_pool
 
-app = FastAPI(title="Cairn", version="0.1.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await get_pool()
+    yield
+    await close_pool()
+
+app = FastAPI(title="Cairn", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "cairn-backend"}
+async def health():
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("SELECT 1")
+    return {"status": "ok", "service": "cairn-backend", "db": "connected"}

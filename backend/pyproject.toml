@@ -5,6 +5,7 @@ description = "Cairn backend — retrieval and chat orchestration"
 authors = ["Akshat"]
 
 [tool.poetry.dependencies]
+asyncpg = "^0.30.0"
 python = "^3.11"
 fastapi = "^0.115.0"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
