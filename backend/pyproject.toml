@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cairn-backend"
+version = "0.1.0"
+description = "Cairn backend — retrieval and chat orchestration"
+authors = ["Akshat"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.30.0" }
+pydantic-settings = "^2.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+ruff = "^0.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
