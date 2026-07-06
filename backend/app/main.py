@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from app.api.search import router as search_router
 from app.db import close_pool, get_pool
 
 @asynccontextmanager
@@ -9,7 +10,7 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 app = FastAPI(title="Cairn", version="0.1.0", lifespan=lifespan)
-
+app.include_router(search_router)
 
 @app.get("/health")
 async def health():
