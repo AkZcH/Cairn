@@ -1,14 +1,11 @@
-mod chunker;
-mod db;
-mod parser;
-
+use cairn_ingest::{chunker, db, embedder::Embedder, parser};
 use clap::Parser as ClapParser;
 use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::PathBuf;
 
 #[derive(ClapParser)]
-#[command(about = "Parse, chunk, and ingest a document into Cairn")]
+#[command(about = "Parse, chunk, embed, and ingest a document into Cairn")]
 struct Args {
     /// Path to the file to ingest
     file: PathBuf,
@@ -16,6 +13,10 @@ struct Args {
     /// Optional title (defaults to the filename)
     #[arg(long)]
     title: Option<String>,
+
+    /// Path to the local model directory
+    #[arg(long, default_value = "models/bge-small-en-v1.5")]
+    model_dir: PathBuf,
 }
 
 fn content_hash(raw: &str) -> String {
@@ -51,6 +52,9 @@ async fn main() -> anyhow::Result<()> {
     let chunks = chunker::chunk_sections(&sections);
     println!("Parsed into {} section(s), {} chunk(s)", sections.len(), chunks.len());
 
+    println!("Loading embedding model...");
+    let embedder = Embedder::load(&args.model_dir)?;
+
     let pool = db::create_pool(&database_url).await?;
 
     let title = args
@@ -72,9 +76,14 @@ async fn main() -> anyhow::Result<()> {
             Some(h) => format!("{h}\n\n{}", chunk.content),
             None => chunk.content.clone(),
         };
-        db::insert_chunk(&pool, document_id, i as i32, &content).await?;
-    }
 
-    println!("Inserted document {document_id} with {} chunk(s).", chunks.len());
+        print!("Embedding chunk {}/{}...\r", i + 1, chunks.len());
+        let embedding = embedder.embed(&content)?;
+
+        db::insert_chunk(&pool, document_id, i as i32, &content, &embedding).await?;
+    }
+    println!();
+
+    println!("Inserted document {document_id} with {} chunk(s), all embedded.", chunks.len());
     Ok(())
 }

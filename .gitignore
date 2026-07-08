@@ -17,3 +17,6 @@ infra/.env
 # IDE
 .vscode/
 .idea/
+
+# Model weights, downloaded manually per ingest/models/README.md
+ingest/models/
