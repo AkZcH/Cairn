@@ -6,10 +6,11 @@ authors = ["Akshat"]
 
 [tool.poetry.dependencies]
 asyncpg = "^0.30.0"
-python = "^3.11"
+python = ">=3.11,<3.13"
 fastapi = "^0.115.0"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
 pydantic-settings = "^2.4.0"
+fastembed = "0.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.0"
