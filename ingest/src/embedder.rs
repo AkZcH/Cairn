@@ -47,9 +47,7 @@ impl Embedder {
 
         // SAFETY: from_mmaped_safetensors memory-maps the weights file rather
         // than loading it fully into RAM. Standard, documented candle usage.
-        let vb = unsafe {
-            VarBuilder::from_mmaped_safetensors(&[weights_path], DTYPE, &device)?
-        };
+        let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[weights_path], DTYPE, &device)? };
 
         let model = BertModel::load(vb, &config).context("loading BERT model weights")?;
 

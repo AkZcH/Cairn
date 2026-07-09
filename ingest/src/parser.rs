@@ -44,7 +44,9 @@ pub fn parse_markdown(raw: &str) -> Vec<Section> {
             }
             Event::Text(text) | Event::Code(text) => {
                 if in_heading {
-                    current_heading.get_or_insert_with(String::new).push_str(&text);
+                    current_heading
+                        .get_or_insert_with(String::new)
+                        .push_str(&text);
                 } else {
                     current_content.push_str(&text);
                     current_content.push(' ');
