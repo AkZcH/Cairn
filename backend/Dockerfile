@@ -5,7 +5,9 @@ WORKDIR /app
 RUN pip install poetry --no-cache-dir
 
 COPY pyproject.toml poetry.lock* ./
-RUN poetry config virtualenvs.create false \
+ENV POETRY_REQUESTS_TIMEOUT=120
+RUN poetry config installer.max-workers 4 \
+    && poetry config virtualenvs.create false \
     && poetry install --no-interaction --no-ansi --no-root
 
 COPY app ./app
