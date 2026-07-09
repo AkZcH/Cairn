@@ -45,6 +45,7 @@ fn is_hidden(path: &Path) -> bool {
 
 enum Outcome {
     Inserted { chunks: usize },
+    Updated { chunks: usize },
     Skipped,
     Failed(String),
 }
@@ -78,11 +79,22 @@ async fn process_file(
 
         let source = if is_markdown { "markdown" } else { "plaintext" };
 
-        let (document_id, was_new) =
-            db::upsert_document(pool, source, resolved_title.as_deref(), &hash).await?;
+        // Canonicalize so identity is stable regardless of which directory
+        // `cargo run` was invoked from.
+        let canonical_path = std::fs::canonicalize(path)?.to_string_lossy().to_string();
 
-        if !was_new {
-            return Ok(Outcome::Skipped);
+        let (document_id, outcome) = db::upsert_document(
+            pool,
+            source,
+            resolved_title.as_deref(),
+            &hash,
+            &canonical_path,
+        )
+        .await?;
+
+        match outcome {
+            db::DocOutcome::Unchanged => return Ok(Outcome::Skipped),
+            db::DocOutcome::New | db::DocOutcome::Updated => {}
         }
 
         for (i, chunk) in chunks.iter().enumerate() {
@@ -94,7 +106,15 @@ async fn process_file(
             db::insert_chunk(pool, document_id, i as i32, &content, &embedding).await?;
         }
 
-        Ok(Outcome::Inserted { chunks: chunks.len() })
+        Ok(match outcome {
+            db::DocOutcome::New => Outcome::Inserted {
+                chunks: chunks.len(),
+            },
+            db::DocOutcome::Updated => Outcome::Updated {
+                chunks: chunks.len(),
+            },
+            db::DocOutcome::Unchanged => unreachable!(),
+        })
     }
     .await;
 
@@ -109,8 +129,8 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let args = Args::parse();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set (see ingest/.env.example)");
+    let database_url =
+        std::env::var("DATABASE_URL").expect("DATABASE_URL must be set (see ingest/.env.example)");
 
     println!("Loading embedding model...");
     let embedder = Embedder::load(&args.model_dir)?;
@@ -138,12 +158,16 @@ async fn main() -> anyhow::Result<()> {
 
     println!("Found {} file(s) to process.", files.len());
 
-    let (mut inserted, mut skipped, mut failed) = (0, 0, 0);
+    let (mut inserted, mut updated, mut skipped, mut failed) = (0, 0, 0, 0);
 
     for (i, path) in files.iter().enumerate() {
         print!("[{}/{}] {}... ", i + 1, files.len(), path.display());
 
-        let title = if files.len() == 1 { args.title.as_deref() } else { None };
+        let title = if files.len() == 1 {
+            args.title.as_deref()
+        } else {
+            None
+        };
 
         match process_file(path, title, &embedder, &pool).await {
             Outcome::Inserted { chunks } => {
@@ -158,11 +182,15 @@ async fn main() -> anyhow::Result<()> {
                 println!("FAILED: {err}");
                 failed += 1;
             }
+            Outcome::Updated { chunks } => {
+                println!("updated ({chunks} chunks re-embedded)");
+                updated += 1;
+            }
         }
     }
 
     println!(
-        "\nDone. {inserted} inserted, {skipped} skipped, {failed} failed, out of {} file(s).",
+        "\nDone. {inserted} inserted, {updated} updated, {skipped} skipped, {failed} failed, out of {} file(s).",
         files.len()
     );
 
