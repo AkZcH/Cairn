@@ -221,6 +221,7 @@ dependencies = [
  "tokenizers",
  "tokio",
  "uuid",
+ "walkdir",
 ]
 
 [[package]]

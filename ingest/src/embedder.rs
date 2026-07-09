@@ -1,6 +1,6 @@
 //! Generates sentence embeddings using BAAI/bge-small-en-v1.5 (384-dim),
 //! run locally via candle on CPU. Model files are loaded from disk rather
-//! than fetched at runtime — see ingest/models/README.md for how to get
+//! than fetched at runtime, see ingest/models/README.md for how to get
 //! them. This avoids depending on hf-hub's download machinery, which has
 //! had recurring redirect-handling bugs and describes itself as unstable.
 
