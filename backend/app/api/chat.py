@@ -1,10 +1,16 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.conversations import create_conversation, get_recent_messages, insert_message
+from app.auth import get_current_user
+from app.conversations import (
+    create_conversation,
+    get_recent_messages,
+    insert_message,
+    verify_conversation_owner,
+)
 from app.db import get_pool
 from app.llm import call_groq
 from app.retrieval import hybrid_search
@@ -42,18 +48,16 @@ instead of guessing or using outside knowledge."""
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user_id: UUID = Depends(get_current_user)):
     pool = await get_pool()
 
-    conversation_id = request.conversation_id
-    if conversation_id is None:
-        conversation_id = await create_conversation(pool)
+    if request.conversation_id is None:
+        conversation_id = await create_conversation(pool, user_id)
+    else:
+        await verify_conversation_owner(pool, user_id, request.conversation_id)
+        conversation_id = request.conversation_id
 
-    # Retrieval always uses just the current question, not the full history,
-    # searching on an entire conversation's accumulated text would dilute
-    # the query and hurt relevance.
-    chunks = await hybrid_search(request.question, request.limit)
-
+    chunks = await hybrid_search(user_id, request.question, request.limit)
     history = await get_recent_messages(pool, conversation_id, limit=10)
 
     if not chunks:
@@ -73,16 +77,12 @@ async def chat(request: ChatRequest):
         answer = await call_groq(messages)
         citations = [
             Citation(
-                chunk_id=chunk["chunk_id"],
-                document_id=chunk["document_id"],
-                title=chunk["title"],
-                content=chunk["content"],
+                chunk_id=c["chunk_id"], document_id=c["document_id"],
+                title=c["title"], content=c["content"],
             )
-            for chunk in chunks
+            for c in chunks
         ]
 
-    # Store the raw question (not the context-stuffed version) so history
-    # stays readable and re-sendable on future turns.
     await insert_message(pool, conversation_id, "user", request.question)
     await insert_message(
         pool, conversation_id, "assistant", answer,

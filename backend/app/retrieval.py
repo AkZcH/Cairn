@@ -1,10 +1,11 @@
+from uuid import UUID
+
 from app.db import get_pool
 from app.embedder import embed_query, to_pgvector_literal
 
 
-async def hybrid_search(query: str, limit: int = 10) -> list[dict]:
+async def hybrid_search(user_id: UUID, query: str, limit: int = 10) -> list[dict]:
     pool = await get_pool()
-
     query_embedding = embed_query(query)
     embedding_literal = to_pgvector_literal(query_embedding)
 
@@ -13,18 +14,20 @@ async def hybrid_search(query: str, limit: int = 10) -> list[dict]:
         WITH fts AS (
             SELECT c.id AS chunk_id,
                    ROW_NUMBER() OVER (
-                       ORDER BY ts_rank(c.content_tsv, plainto_tsquery('english', $1)) DESC
+                       ORDER BY ts_rank(c.content_tsv, plainto_tsquery('english', $2)) DESC
                    ) AS rank
             FROM chunks c
-            WHERE c.content_tsv @@ plainto_tsquery('english', $1)
+            JOIN documents d ON d.id = c.document_id
+            WHERE d.user_id = $1 AND c.content_tsv @@ plainto_tsquery('english', $2)
             LIMIT 50
         ),
         vec AS (
             SELECT c.id AS chunk_id,
-                   ROW_NUMBER() OVER (ORDER BY c.embedding <=> $2::vector) AS rank
+                   ROW_NUMBER() OVER (ORDER BY c.embedding <=> $3::vector) AS rank
             FROM chunks c
-            WHERE c.embedding IS NOT NULL
-            ORDER BY c.embedding <=> $2::vector
+            JOIN documents d ON d.id = c.document_id
+            WHERE d.user_id = $1 AND c.embedding IS NOT NULL
+            ORDER BY c.embedding <=> $3::vector
             LIMIT 50
         )
         SELECT c.id AS chunk_id, c.document_id, c.chunk_index, c.content,
@@ -35,10 +38,11 @@ async def hybrid_search(query: str, limit: int = 10) -> list[dict]:
         JOIN documents d ON d.id = c.document_id
         LEFT JOIN fts ON fts.chunk_id = c.id
         LEFT JOIN vec ON vec.chunk_id = c.id
-        WHERE fts.chunk_id IS NOT NULL OR vec.chunk_id IS NOT NULL
+        WHERE d.user_id = $1 AND (fts.chunk_id IS NOT NULL OR vec.chunk_id IS NOT NULL)
         ORDER BY score DESC
-        LIMIT $3
+        LIMIT $4
         """,
+        user_id,
         query,
         embedding_literal,
         limit,
