@@ -17,8 +17,17 @@ struct Args {
     #[arg(long)]
     title: Option<String>,
 
-    #[arg(long, default_value = "models/bge-small-en-v1.5")]
+    // #[arg(long, default_value = "models/bge-small-en-v1.5")]
+    #[arg(long, default_value_os_t = default_model_dir())]
     model_dir: PathBuf,
+}
+
+fn default_model_dir() -> PathBuf {
+    dirs::data_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("cairn")
+        .join("models")
+        .join("bge-small-en-v1.5")
 }
 
 fn content_hash(raw: &str) -> String {
