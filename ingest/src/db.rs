@@ -1,106 +1,82 @@
-//! Postgres writer. Deliberately uses runtime `sqlx::query()` rather than
-//! the compile-time-checked `query!` macro — that macro needs a live
-//! DATABASE_URL (or a cached `.sqlx` directory) just to compile, which
-//! would make `cargo build` fail on a machine without Postgres running.
-//! Runtime queries trade compile-time type-checking for that flexibility.
+//! Talks to the Cairn backend over HTTP, authenticated with a per-user API
+//! key, rather than connecting to Postgres directly. In a multi-tenant
+//! world, a local CLI can't hold a shared database password, an API key
+//! scoped to one account is the correct boundary.
 
-use pgvector::Vector;
-use sqlx::postgres::PgPoolOptions;
-use sqlx::{PgPool, Row};
+use serde::Serialize;
 use uuid::Uuid;
 
-pub async fn create_pool(database_url: &str) -> anyhow::Result<PgPool> {
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(database_url)
-        .await?;
-    Ok(pool)
+#[derive(Serialize)]
+struct ChunkPayload {
+    index: i32,
+    content: String,
+    embedding: Vec<f32>,
 }
 
-/// Inserts a document, or returns the existing one's id if this exact
-/// content (by hash) was already ingested. This is the dedup hook the
-/// schema was built for.
-pub enum DocOutcome {
-    New,
-    Unchanged,
-    Updated,
+#[derive(Serialize)]
+struct UploadPayload {
+    source: String,
+    title: Option<String>,
+    source_path: String,
+    content_hash: String,
+    chunks: Vec<ChunkPayload>,
 }
 
-pub async fn upsert_document(
-    pool: &PgPool,
-    source: &str,
-    title: Option<&str>,
-    content_hash: &str,
-    source_path: &str,
-) -> anyhow::Result<(Uuid, DocOutcome)> {
-    let existing = sqlx::query("SELECT id, content_hash FROM documents WHERE source_path = $1")
-        .bind(source_path)
-        .fetch_optional(pool)
-        .await?;
+#[derive(serde::Deserialize)]
+pub struct UploadResponse {
+    pub document_id: Uuid,
+    pub status: String, // "inserted" | "updated" | "unchanged"
+}
 
-    match existing {
-        None => {
-            let row = sqlx::query(
-                "INSERT INTO documents (source, title, content_hash, source_path)
-                 VALUES ($1, $2, $3, $4)
-                 RETURNING id",
-            )
-            .bind(source)
-            .bind(title)
-            .bind(content_hash)
-            .bind(source_path)
-            .fetch_one(pool)
-            .await?;
-            let id: Uuid = row.get("id");
-            Ok((id, DocOutcome::New))
-        }
-        Some(row) => {
-            let id: Uuid = row.get("id");
-            let existing_hash: String = row.get("content_hash");
+pub struct ApiClient {
+    client: reqwest::Client,
+    base_url: String,
+    api_key: String,
+}
 
-            if existing_hash == content_hash {
-                Ok((id, DocOutcome::Unchanged))
-            } else {
-                sqlx::query(
-                    "UPDATE documents SET content_hash = $1, title = $2, updated_at = now()
-                     WHERE id = $3",
-                )
-                .bind(content_hash)
-                .bind(title)
-                .bind(id)
-                .execute(pool)
-                .await?;
-
-                sqlx::query("DELETE FROM chunks WHERE document_id = $1")
-                    .bind(id)
-                    .execute(pool)
-                    .await?;
-
-                Ok((id, DocOutcome::Updated))
-            }
-        }
+impl ApiClient {
+    pub fn new(base_url: String, api_key: String) -> Self {
+        Self { client: reqwest::Client::new(), base_url, api_key }
     }
-}
 
-pub async fn insert_chunk(
-    pool: &PgPool,
-    document_id: Uuid,
-    chunk_index: i32,
-    content: &str,
-    embedding: &[f32],
-) -> anyhow::Result<()> {
-    let vector = Vector::from(embedding.to_vec());
+    pub async fn upload_document(
+        &self,
+        source: &str,
+        title: Option<&str>,
+        source_path: &str,
+        content_hash: &str,
+        chunks: Vec<(String, Vec<f32>)>, // (content, embedding) pairs
+    ) -> anyhow::Result<UploadResponse> {
+        let payload = UploadPayload {
+            source: source.to_string(),
+            title: title.map(String::from),
+            source_path: source_path.to_string(),
+            content_hash: content_hash.to_string(),
+            chunks: chunks
+                .into_iter()
+                .enumerate()
+                .map(|(i, (content, embedding))| ChunkPayload {
+                    index: i as i32,
+                    content,
+                    embedding,
+                })
+                .collect(),
+        };
 
-    sqlx::query(
-        "INSERT INTO chunks (document_id, chunk_index, content, embedding)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (document_id, chunk_index) DO NOTHING",
-    )
-    .bind(document_id)
-    .bind(chunk_index)
-    .bind(content)
-    .bind(vector)
-    .execute(pool)
-    .await?;
-    Ok(())
+        let response = self
+            .client
+            .post(format!("{}/documents/upload", self.base_url))
+            .bearer_auth(&self.api_key)
+            .json(&payload)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            anyhow::bail!("upload failed ({status}): {body}");
+        }
+
+        Ok(response.json().await?)
+    }
 }
