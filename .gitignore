@@ -19,4 +19,7 @@ infra/.env
 .idea/
 
 # Model weights, downloaded manually per ingest/models/README.md
-ingest/models/
+ingest/models/test_vault/
+test.md
+db_notes.md
+embed_test_doc.md
