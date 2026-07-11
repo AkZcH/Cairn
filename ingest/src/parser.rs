@@ -52,7 +52,13 @@ pub fn parse_markdown(raw: &str) -> Vec<Section> {
                     current_content.push(' ');
                 }
             }
-            Event::End(TagEnd::Paragraph) => {
+            Event::End(TagEnd::Paragraph) | Event::End(TagEnd::Item) => {
+                // List items ("tight" lists, per CommonMark) don't emit
+                // Paragraph events, only Item ones. Without this, every
+                // bullet point in a markdown list runs into the next with
+                // just a space, collapsing an entire list (like the PRD's
+                // Tech Stack section) into one undifferentiated blob
+                // instead of separable, individually-embeddable facts.
                 current_content.push('\n');
             }
             Event::SoftBreak | Event::HardBreak => {
