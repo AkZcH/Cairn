@@ -108,3 +108,4 @@ This PRD is actionable. We’ll build **feature by feature**, starting with setu
 **Next**: Shall I create the initial GitHub repo structure (folders, Docker Compose, basic README), or jump straight into the ingestion pipeline code? Or refine anything in the PRD first?
 
 Let’s make Cairn legendary. What’s our first move?
+
