@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #000000;
+  --color-surface: #121715;
+  --color-line: #1f2b26;
+  --color-ink: #eaefec;
+  --color-stone: #8fa097;
+  --color-moss: #35d48a;
+  --color-moss-soft: #b8f5d6;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background-color: var(--color-moss);
+  color: var(--color-bg);
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-moss);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgba(53, 212, 138, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(53, 212, 138, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+.hero-fade {
+  mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 30%,
+    black 40%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 60% at 50% 30%,
+    black 40%,
+    transparent 100%
+  );
+}
+
+.glow-text {
+  background: linear-gradient(180deg, #eafff4 0%, #35d48a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
