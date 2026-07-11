@@ -1,21 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { hasToken } from "@/lib/api";
-import { TokenGate } from "@/components/dashboard/token-gate";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { ChatPanel } from "@/components/dashboard/chat-panel";
 
 export default function DashboardPage() {
-  const [connected, setConnected] = useState(false);
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const isConnected = connected || hasToken();
+  useEffect(() => {
+    if (!hasToken()) {
+      router.push("/login");
+    } else {
+      setChecked(true);
+    }
+  }, [router]);
 
-  if (!isConnected) {
-    return <TokenGate onConnected={() => setConnected(true)} />;
-  }
+  if (!checked) return null;
 
   return (
     <div className="flex h-screen bg-bg text-ink">

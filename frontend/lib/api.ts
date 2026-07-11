@@ -77,3 +77,22 @@ export type Message = {
 export async function getConversationMessages(id: string): Promise<Message[]> {
   return authedFetch(`/conversations/${id}/messages`);
 }
+export async function login(email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ token: string; api_key: string | null }>;
+}
+
+export async function signup(email: string, password: string) {
+  const res = await fetch(`${API_URL}/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<{ token: string; api_key: string }>;
+}

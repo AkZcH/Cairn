@@ -27,8 +27,9 @@ export function CTA() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
+
           <a
-            href="#"
+            href="/signup"
             className="focus-ring rounded-full bg-moss px-6 py-3 font-medium text-bg transition-colors hover:bg-moss-soft"
           >
             Get Started

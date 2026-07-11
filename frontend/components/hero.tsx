@@ -51,7 +51,7 @@ export function Hero() {
           className="flex items-center gap-4 mb-5"
         >
           <a
-            href="#"
+            href="/signup"
             className="bg-moss text-bg font-medium px-6 py-3 rounded-md hover:bg-moss-soft transition-colors focus-ring"
           >
             Get started

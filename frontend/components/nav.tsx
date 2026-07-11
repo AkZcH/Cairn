@@ -32,7 +32,14 @@ export function Nav() {
         </div>
 
         <a
-          href="#"
+          href="/login"
+          className="hidden md:block font-mono text-xs uppercase tracking-widest text-stone hover:text-ink transition-colors focus-ring"
+        >
+          Sign in
+        </a>
+
+        <a
+          href="/signup"
           className="font-medium text-sm bg-moss text-bg px-4 py-2 rounded-md hover:bg-moss-soft transition-colors focus-ring"
         >
           Get started
