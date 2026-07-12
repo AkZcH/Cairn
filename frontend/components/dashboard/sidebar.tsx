@@ -6,6 +6,7 @@ import {
   type ConversationSummary,
   clearToken,
 } from "@/lib/api";
+import { UploadModal } from "./upload-modal";
 
 export function Sidebar({
   activeId,
@@ -20,6 +21,7 @@ export function Sidebar({
 }) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpload, setShowUpload] = useState(false);
 
   useEffect(() => {
     listConversations()
@@ -40,6 +42,13 @@ export function Sidebar({
           className="w-full text-left text-sm bg-surface border border-line rounded-lg px-3 py-2.5 hover:border-moss/50 transition-colors focus-ring"
         >
           + New chat
+        </button>
+
+        <button
+          onClick={() => setShowUpload(true)}
+          className="w-full text-left text-sm bg-surface border border-line rounded-lg px-3 py-2.5 hover:border-moss/50 transition-colors focus-ring mt-2"
+        >
+          + Upload notes
         </button>
       </div>
 
@@ -82,6 +91,8 @@ export function Sidebar({
           Disconnect
         </button>
       </div>
+
+      {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
     </aside>
   );
 }

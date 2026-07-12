@@ -96,3 +96,22 @@ export async function signup(email: string, password: string) {
   if (!res.ok) throw new Error(await res.text());
   return res.json() as Promise<{ token: string; api_key: string }>;
 }
+export async function uploadText(title: string, content: string) {
+  return authedFetch("/upload/text", {
+    method: "POST",
+    body: JSON.stringify({ title, content }),
+  });
+}
+
+export async function uploadFile(file: File) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_URL}/upload/file`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
