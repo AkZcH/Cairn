@@ -34,6 +34,7 @@ services:
       - "${BACKEND_PORT}:8000"
     volumes:
       - ../db:/app/db
+      - ../backend/eval:/app/eval
 
 volumes:
   cairn_pgdata:
