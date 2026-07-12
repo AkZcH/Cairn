@@ -1,0 +1,50 @@
+[
+  {
+    "question": "What database technology does Cairn use for vector storage?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "How does Cairn generate embeddings?",
+    "relevant_titles": ["PRD.md", "README.md"]
+  },
+  {
+    "question": "What LLM does Cairn use for chat answers?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "Does Cairn support incremental updates when a file changes?",
+    "relevant_titles": ["PRD.md", "README.md"]
+  },
+  {
+    "question": "What does Cairn's knowledge graph feature do?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "How fast should Cairn respond to queries?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "What frontend framework does Cairn's dashboard use?",
+    "relevant_titles": ["README.md"]
+  },
+  {
+    "question": "Does Cairn combine keyword search with semantic search?",
+    "relevant_titles": ["README.md"]
+  },
+  {
+    "question": "What tools does a systems engineer need to know?",
+    "relevant_titles": ["tech stack for systems engineer"]
+  },
+  {
+    "question": "What infrastructure-as-code tools are recommended for DevOps?",
+    "relevant_titles": ["tech stack for systems engineer"]
+  },
+  {
+    "question": "What book covers building large-scale distributed systems?",
+    "relevant_titles": ["Tech Books To Read"]
+  },
+  {
+    "question": "What book should I read to prepare for coding interviews?",
+    "relevant_titles": ["Tech Books To Read"]
+  }
+]

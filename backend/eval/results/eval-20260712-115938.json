@@ -1,0 +1,497 @@
+[
+  {
+    "mode": "full-text-only",
+    "recall_at_k": 0.0,
+    "mrr": 0.0,
+    "questions": [
+      {
+        "question": "What database technology does Cairn use for vector storage?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "How does Cairn generate embeddings?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What LLM does Cairn use for chat answers?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "Does Cairn support incremental updates when a file changes?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What does Cairn's knowledge graph feature do?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "How fast should Cairn respond to queries?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What frontend framework does Cairn's dashboard use?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "Does Cairn combine keyword search with semantic search?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What tools does a systems engineer need to know?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What infrastructure-as-code tools are recommended for DevOps?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What book covers building large-scale distributed systems?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      },
+      {
+        "question": "What book should I read to prepare for coding interviews?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [],
+        "recall": 0.0,
+        "reciprocal_rank": 0.0
+      }
+    ]
+  },
+  {
+    "mode": "vector-only",
+    "recall_at_k": 1.0,
+    "mrr": 0.9375,
+    "questions": [
+      {
+        "question": "What database technology does Cairn use for vector storage?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "tech stack for systems engineer",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does Cairn generate embeddings?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "Tech Books To Read"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What LLM does Cairn use for chat answers?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "Does Cairn support incremental updates when a file changes?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What does Cairn's knowledge graph feature do?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How fast should Cairn respond to queries?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What frontend framework does Cairn's dashboard use?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "Does Cairn combine keyword search with semantic search?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "Tech Books To Read",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 0.25
+      },
+      {
+        "question": "What tools does a systems engineer need to know?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "Tech Books To Read"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What infrastructure-as-code tools are recommended for DevOps?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [
+          "tech stack for systems engineer",
+          "README.md",
+          "tech stack for systems engineer",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What book covers building large-scale distributed systems?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [
+          "Tech Books To Read",
+          "tech stack for systems engineer",
+          "README.md",
+          "README.md",
+          "tech stack for systems engineer"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What book should I read to prepare for coding interviews?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [
+          "Tech Books To Read",
+          "README.md",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      }
+    ]
+  },
+  {
+    "mode": "hybrid",
+    "recall_at_k": 1.0,
+    "mrr": 0.9375,
+    "questions": [
+      {
+        "question": "What database technology does Cairn use for vector storage?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "tech stack for systems engineer",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How does Cairn generate embeddings?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "Tech Books To Read"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What LLM does Cairn use for chat answers?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "Does Cairn support incremental updates when a file changes?",
+        "relevant_titles": [
+          "PRD.md",
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What does Cairn's knowledge graph feature do?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "How fast should Cairn respond to queries?",
+        "relevant_titles": [
+          "PRD.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "README.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What frontend framework does Cairn's dashboard use?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "README.md",
+          "README.md",
+          "PRD.md",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "Does Cairn combine keyword search with semantic search?",
+        "relevant_titles": [
+          "README.md"
+        ],
+        "retrieved_titles": [
+          "PRD.md",
+          "PRD.md",
+          "Tech Books To Read",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 0.25
+      },
+      {
+        "question": "What tools does a systems engineer need to know?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "Tech Books To Read"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What infrastructure-as-code tools are recommended for DevOps?",
+        "relevant_titles": [
+          "tech stack for systems engineer"
+        ],
+        "retrieved_titles": [
+          "tech stack for systems engineer",
+          "README.md",
+          "tech stack for systems engineer",
+          "README.md",
+          "README.md"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What book covers building large-scale distributed systems?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [
+          "Tech Books To Read",
+          "tech stack for systems engineer",
+          "README.md",
+          "README.md",
+          "tech stack for systems engineer"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      },
+      {
+        "question": "What book should I read to prepare for coding interviews?",
+        "relevant_titles": [
+          "Tech Books To Read"
+        ],
+        "retrieved_titles": [
+          "Tech Books To Read",
+          "README.md",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer",
+          "tech stack for systems engineer"
+        ],
+        "recall": 1.0,
+        "reciprocal_rank": 1.0
+      }
+    ]
+  }
+]
