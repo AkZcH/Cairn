@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release
+      - run: cargo test
+      - run: cargo fmt --check
+
+  backend-and-eval:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: cairn
+          POSTGRES_PASSWORD: cairn_ci
+          POSTGRES_DB: cairn
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U cairn"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry and dependencies
+        working-directory: backend
+        run: |
+          pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi
+
+      - name: Run migrations
+        working-directory: db
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: cairn
+          POSTGRES_PASSWORD: cairn_ci
+          POSTGRES_DB: cairn
+          POSTGRES_PORT: 5432
+        run: python run_migrations.py
+
+      - name: Seed CI eval user
+        working-directory: backend
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: cairn
+          POSTGRES_PASSWORD: cairn_ci
+          POSTGRES_DB: cairn
+          POSTGRES_PORT: 5432
+          JWT_SECRET: ci-only-secret-not-used-for-anything-real
+        run: python -m eval.seed_ci
+
+      - name: Run retrieval evaluation (fails build on regression)
+        working-directory: backend
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: cairn
+          POSTGRES_PASSWORD: cairn_ci
+          POSTGRES_DB: cairn
+          POSTGRES_PORT: 5432
+          JWT_SECRET: ci-only-secret-not-used-for-anything-real
+        run: |
+          python -m eval.run_eval \
+            --email ci-eval@cairn.local \
+            --dataset dataset_ci.json \
+            --runs 3 \
+            --min-recall 0.9

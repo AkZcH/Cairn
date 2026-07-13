@@ -62,6 +62,8 @@ async def main():
     parser.add_argument("--email", required=True)
     parser.add_argument("--k", type=int, default=5)
     parser.add_argument("--runs", type=int, default=1, help="Repeat each mode N times, report mean ± std")
+    parser.add_argument("--dataset", default="dataset.json")
+    parser.add_argument("--min-recall", type=float, default=None, help="Exit non-zero if hybrid recall falls below this")
     args = parser.parse_args()
 
     pool = await get_pool()
@@ -70,7 +72,7 @@ async def main():
         raise SystemExit(f"No user found with email {args.email}")
     user_id = row["id"]
 
-    dataset = json.loads(DATASET_PATH.read_text())
+    dataset = json.loads((Path(__file__).parent / args.dataset).read_text())
 
     async def hybrid_wrapper(user_id, question, k):
         return await hybrid_search(user_id, question, k)
@@ -113,6 +115,11 @@ async def main():
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     out_path = RESULTS_DIR / f"eval-{timestamp}.json"
     out_path.write_text(json.dumps(all_results, indent=2))
+    if args.min_recall is not None:
+        hybrid = next(r for r in all_results if r["mode"] == "hybrid")
+        if hybrid["recall_mean"] < args.min_recall:
+            print(f"\nFAIL: hybrid recall {hybrid['recall_mean']:.2f} below threshold {args.min_recall}")
+            raise SystemExit(1)
     print(f"\nFull results written to {out_path}")
 
 
