@@ -32,11 +32,17 @@ fn content_hash(raw: &str) -> String {
 }
 
 fn is_supported(path: &Path) -> bool {
-    matches!(path.extension().and_then(|e| e.to_str()), Some("md") | Some("markdown") | Some("txt"))
+    matches!(
+        path.extension().and_then(|e| e.to_str()),
+        Some("md") | Some("markdown") | Some("txt")
+    )
 }
 
 fn is_hidden(path: &Path) -> bool {
-    path.file_name().and_then(|n| n.to_str()).map(|n| n.starts_with('.')).unwrap_or(false)
+    path.file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| n.starts_with('.'))
+        .unwrap_or(false)
 }
 
 enum Outcome {
@@ -56,11 +62,19 @@ async fn process_file(
         let raw = fs::read_to_string(path)?;
         let hash = content_hash(&raw);
 
-        let is_markdown = path.extension().map(|e| e == "md" || e == "markdown").unwrap_or(false);
-        let sections = if is_markdown { parser::parse_markdown(&raw) } else { parser::parse_plaintext(&raw) };
+        let is_markdown = path
+            .extension()
+            .map(|e| e == "md" || e == "markdown")
+            .unwrap_or(false);
+        let sections = if is_markdown {
+            parser::parse_markdown(&raw)
+        } else {
+            parser::parse_plaintext(&raw)
+        };
         let chunks = chunker::chunk_sections(&sections);
 
-        let resolved_title = title.map(String::from)
+        let resolved_title = title
+            .map(String::from)
             .or_else(|| path.file_name().map(|n| n.to_string_lossy().to_string()));
         let source = if is_markdown { "markdown" } else { "plaintext" };
         let canonical_path = std::fs::canonicalize(path)?.to_string_lossy().to_string();
@@ -76,15 +90,26 @@ async fn process_file(
         }
 
         let response = api
-            .upload_document(source, resolved_title.as_deref(), &canonical_path, &hash, payload_chunks)
+            .upload_document(
+                source,
+                resolved_title.as_deref(),
+                &canonical_path,
+                &hash,
+                payload_chunks,
+            )
             .await?;
 
         Ok(match response.status.as_str() {
-            "inserted" => Outcome::Inserted { chunks: chunks.len() },
-            "updated" => Outcome::Updated { chunks: chunks.len() },
+            "inserted" => Outcome::Inserted {
+                chunks: chunks.len(),
+            },
+            "updated" => Outcome::Updated {
+                chunks: chunks.len(),
+            },
             _ => Outcome::Skipped,
         })
-    }.await;
+    }
+    .await;
 
     result.unwrap_or_else(|e| Outcome::Failed(e.to_string()))
 }
@@ -94,7 +119,8 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
     let args = Args::parse();
 
-    let base_url = std::env::var("CAIRN_API_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
+    let base_url =
+        std::env::var("CAIRN_API_URL").unwrap_or_else(|_| "http://localhost:8000".to_string());
     let api_key = std::env::var("CAIRN_API_KEY")
         .expect("CAIRN_API_KEY must be set (see ingest/.env.example, get one from /auth/signup)");
 
@@ -124,16 +150,35 @@ async fn main() -> anyhow::Result<()> {
 
     for (i, path) in files.iter().enumerate() {
         print!("[{}/{}] {}... ", i + 1, files.len(), path.display());
-        let title = if files.len() == 1 { args.title.as_deref() } else { None };
+        let title = if files.len() == 1 {
+            args.title.as_deref()
+        } else {
+            None
+        };
 
         match process_file(path, title, &embedder, &api).await {
-            Outcome::Inserted { chunks } => { println!("inserted ({chunks} chunks)"); inserted += 1; }
-            Outcome::Updated { chunks } => { println!("updated ({chunks} chunks re-embedded)"); updated += 1; }
-            Outcome::Skipped => { println!("skipped (unchanged)"); skipped += 1; }
-            Outcome::Failed(err) => { println!("FAILED: {err}"); failed += 1; }
+            Outcome::Inserted { chunks } => {
+                println!("inserted ({chunks} chunks)");
+                inserted += 1;
+            }
+            Outcome::Updated { chunks } => {
+                println!("updated ({chunks} chunks re-embedded)");
+                updated += 1;
+            }
+            Outcome::Skipped => {
+                println!("skipped (unchanged)");
+                skipped += 1;
+            }
+            Outcome::Failed(err) => {
+                println!("FAILED: {err}");
+                failed += 1;
+            }
         }
     }
 
-    println!("\nDone. {inserted} inserted, {updated} updated, {skipped} skipped, {failed} failed, out of {} file(s).", files.len());
+    println!(
+        "\nDone. {inserted} inserted, {updated} updated, {skipped} skipped, {failed} failed, out of {} file(s).",
+        files.len()
+    );
     Ok(())
 }

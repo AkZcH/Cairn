@@ -36,7 +36,11 @@ pub struct ApiClient {
 
 impl ApiClient {
     pub fn new(base_url: String, api_key: String) -> Self {
-        Self { client: reqwest::Client::new(), base_url, api_key }
+        Self {
+            client: reqwest::Client::new(),
+            base_url,
+            api_key,
+        }
     }
 
     pub async fn upload_document(
