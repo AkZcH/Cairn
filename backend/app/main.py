@@ -8,6 +8,8 @@ from app.api.auth import router as auth_router
 from app.api.documents import router as documents_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.upload import router as upload_router
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,6 +26,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+Instrumentator().instrument(app).expose(app)
 
 app.include_router(search_router)
 app.include_router(chat_router)

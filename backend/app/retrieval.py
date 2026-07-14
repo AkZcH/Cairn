@@ -3,8 +3,12 @@ from uuid import UUID
 from app.db import get_pool
 from app.embedder import embed_query, to_pgvector_literal
 
+import time
+
+from app.observability import retrieval_duration_seconds
 
 async def hybrid_search(user_id: UUID, query: str, limit: int = 10) -> list[dict]:
+    start = time.perf_counter()
     pool = await get_pool()
     query_embedding = embed_query(query)
     embedding_literal = to_pgvector_literal(query_embedding)
@@ -39,7 +43,7 @@ async def hybrid_search(user_id: UUID, query: str, limit: int = 10) -> list[dict
         LEFT JOIN fts ON fts.chunk_id = c.id
         LEFT JOIN vec ON vec.chunk_id = c.id
         WHERE d.user_id = $1 AND (fts.chunk_id IS NOT NULL OR vec.chunk_id IS NOT NULL)
-        ORDER BY score DESC
+        ORDER BY score DESC, c.id
         LIMIT $4
         """,
         user_id,
@@ -47,4 +51,6 @@ async def hybrid_search(user_id: UUID, query: str, limit: int = 10) -> list[dict
         embedding_literal,
         limit,
     )
+    retrieval_duration_seconds.observe(time.perf_counter() - start)
+
     return [dict(row) for row in rows]

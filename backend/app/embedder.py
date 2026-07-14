@@ -1,4 +1,6 @@
 from fastembed import TextEmbedding
+import time
+from app.observability import embedding_duration_seconds
 
 _model: TextEmbedding | None = None
 
@@ -9,9 +11,11 @@ def get_model() -> TextEmbedding:
     return _model
 
 def embed_query(text: str) -> list[float]:
+    start = time.perf_counter()
     model = get_model()
     embeddings = list(model.embed([text]))
-    return embeddings[0].tolist()   
+    embedding_duration_seconds.observe(time.perf_counter() - start)
+    return embeddings[0].tolist()  
 
 def to_pgvector_literal(embedding: list[float]) -> str:
     """asyncpg doesn't know about Postgres's vector type natively, so we
