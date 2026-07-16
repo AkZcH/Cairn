@@ -1,106 +1,76 @@
-## Cairn - Personal Ever-Evolving Knowledge Rift (Second Brain RAG)
+# Cairn — Product Requirements (Current)
 
-## PRD
+**Version 2.0 — reflects the shipped system, not the original plan.** The original PRD (`docs/archive/PRD-original-2026-07.md`) proposed a heavier stack, LlamaIndex, LangGraph, Neo4j, Streamlit, Chroma. Most of that was deliberately cut in favor of a leaner, more defensible build, documented honestly below rather than left stale.
 
-**Version**: 1.0  
-**Date**: July 2026  
-**Overview**: Cairn is a local-first, personal AI-powered knowledge base built as a Retrieval-Augmented Generation (RAG) system. It ingests and preserves notes, learning roadmaps, LLM responses (Grok, Claude, ChatGPT), articles, and more. It evolves continuously through incremental updates, hybrid retrieval (vector + knowledge graph), and agentic capabilities. The system emphasizes AI infrastructure best practices: observability, scalability, modularity, and production-grade reliability—perfect for your portfolio and career goals.
+## Vision
 
-**Vision**: Become your ultimate learning companion that never forgets, connects ideas across time, and actively helps synthesize new insights from your growing knowledge base.
+A local-first, ever-evolving personal knowledge base. Ingest notes, retrieve with hybrid search, get answers grounded in citations, not guesses, with a working proof, not a claim, that the retrieval actually works.
 
-**Target User**: You (solo power user) — extensible to other AI-infra enthusiasts.
+## What's actually built
 
----
+**Ingestion**
 
-### Functional Requirements
+- Rust CLI (`ingest/`), structure-aware markdown/plaintext chunking (splits on headings, packs paragraphs, handles markdown list items correctly)
+- Local embeddings via `candle` (BAAI/bge-small-en-v1.5), CPU-only, no GPU, no cloud ML calls
+- Whole-folder batch ingestion with per-file error isolation
+- Path-based document identity with content-hash change detection, editing a file replaces its old chunks, never forks the knowledge base
+- Uploads to the backend over an authenticated HTTP API (API key), not a direct database connection
 
-#### Phase 1: Core Ingestion & Basic RAG (MVP)
+**Web ingestion** (`backend/app/upload.py`)
 
-- Support multiple input formats: Markdown, PDF, TXT, JSON (exported chat histories), plain text.
-- Drag-and-drop / folder watch / API endpoint for ingestion.
-- Automatic parsing, semantic chunking, embedding, and storage.
-- Basic chat interface for querying the KB with source citations.
-- Metadata tagging (source, date, topic, LLM-origin).
+- Paste-text and drag-and-drop file upload through the dashboard
+- Server-side chunking and embedding via `fastembed` (same model, same vector space as the CLI path)
+- Same edit-detection guarantee as the CLI path
 
-#### Phase 2: Evolution & Hybrid Intelligence
+**Retrieval**
 
-- Incremental updates & versioning: Detect changes, re-embed only deltas, maintain history.
-- Knowledge Graph integration: Auto-extract entities/relations → enable multi-hop reasoning (e.g., roadmap connections).
-- Agentic features:
-  - Auto-summarize & link new content.
-  - "Roadmap Updater" agent: Analyze new notes vs. existing learning paths.
-  - Feedback loop: Thumbs up/down refines retrieval.
-- Temporal & comparative queries (e.g., "How has my RAG understanding evolved?").
+- Postgres full-text search + pgvector cosine similarity (HNSW index), fused with Reciprocal Rank Fusion
+- Measured, not assumed: a reproducible evaluation harness (`backend/eval/`) compares four retrieval modes on a labeled question set, hybrid achieves 1.00 recall@5 / 0.90 MRR against 0.00 for full-text alone, full methodology and findings in `backend/eval/README.md`
 
-#### Phase 3: Advanced & Polish
+**Chat**
 
-- Multi-modal support (images via embeddings/OCR).
-- Export/share knowledge packs or generated roadmaps.
-- Evaluation dashboard: RAG metrics (faithfulness, relevance) on personal test sets.
-- User-defined collections (e.g., "AI Infra", "Roadmaps").
-- Proactive suggestions: "Based on your notes, explore X next."
+- Citation-grounded, multi-turn, via Groq (`openai/gpt-oss-20b`)
+- Conversations persist indefinitely in Postgres; bounded context window sent per LLM call, not the full history every time
+- Refuses to answer when retrieval finds nothing relevant, rather than guessing
 
----
+**Multi-tenancy & auth**
 
-### Non-Functional Requirements
+- Real accounts: signup/login, JWT for the web app, API keys for the CLI
+- Every retrieval query scoped by `user_id`, including inside the ranking CTEs, not just the outer filter
+- Isolation verified with two real, separate accounts, not assumed
 
-- **Performance**: Sub-2s response for most queries (local). Scalable to thousands of documents.
-- **Privacy & Security**: Fully local-first. Optional encrypted storage. No data leaves your machine unless explicitly enabled.
-- **Reliability**: Robust error handling, retries for ingestion, graceful degradation (vector-only if graph down).
-- **Observability**: Logging, metrics (latency, token usage, KB growth, retrieval quality), dashboard.
-- **Usability**: Intuitive UI, searchable history, dark mode, mobile-friendly.
-- **Maintainability**: Modular, well-documented, containerized, easy to extend (polyglot-friendly).
-- **Scalability**: Handle growing KB (GBs of notes) efficiently; support future horizontal scaling.
-- **Cost**: Minimal (local models/embeddings). API fallback with cost tracking.
-- **Accessibility**: Keyboard shortcuts, export to Markdown/PDF.
+**Frontend**
 
----
+- Next.js landing page and authenticated dashboard
+- Real signup/login pages, chat UI with clickable citations, conversation history sidebar, upload modal
 
-### Tech Stack
+**Operations**
 
-**Core**:
+- CI (GitHub Actions): Rust build/test/fmt, backend + retrieval eval against a reproducible dataset, fails the build on a measured recall regression
+- Observability: Prometheus + Grafana, retrieval/embedding/LLM latency histograms, real token usage and cost tracking (from Groq's own `usage` field, not estimated)
 
-- **Python** (primary) — LlamaIndex (indexing/retrieval) + LangGraph (agents/workflows).
-- **Embeddings**: BGE or similar local models (Hugging Face).
-- **Vector Store**: PostgreSQL + pgvector (primary, for infra depth) + Chroma (light fallback).
-- **Knowledge Graph**: Neo4j (Docker).
-- **LLM**: Ollama (Llama 3.1 8B/70B or equivalent) + API providers (Groq, Anthropic, xAI) via LiteLLM abstraction.
+## Deliberately not built (and why)
 
-**Infrastructure & Deployment**:
+- **Neo4j / knowledge graph** — the original plan's most ambitious piece, cut early. A self-updating knowledge graph that reconciles concepts across sources is a genuine, unsolved research problem, not a weekend feature. Revisit only if there's a real, specific need for it, not because it sounds impressive.
+- **LangGraph / agentic pipelines** — added complexity with no concrete use case yet. Hybrid retrieval plus grounded chat covers the actual current need.
+- **Kubernetes, Terraform, Ansible** — considered explicitly, rejected. Single-service, single-database workload; these tools solve problems of scale and fleet management that don't exist here yet. Revisit if that changes.
+- **Hosted deployment** — deliberately last. No point standing up public infrastructure for a product that wasn't finished, tested, or measured yet.
 
-- **Containerization**: Docker + Docker Compose (multi-service: app, DBs, Ollama, Neo4j).
-- **Backend**: FastAPI.
-- **Frontend**: Streamlit (quick iterations) → evolve to Next.js/React + Tailwind.
-- **Monitoring**: Prometheus + Grafana.
-- **Orchestration**: LangGraph + optional Airflow/Celery for background jobs.
-- **Storage**: Local volumes + optional S3-like for backups.
+## Tech stack
 
-**Dev Tools**:
+| Layer                 | Choice                                      |
+| --------------------- | ------------------------------------------- |
+| Ingestion & embedding | Rust, `candle`, `pulldown-cmark`, `reqwest` |
+| Storage               | PostgreSQL 16 + pgvector                    |
+| API & auth            | Python, FastAPI, `asyncpg`, JWT + API keys  |
+| LLM                   | Groq (`openai/gpt-oss-20b`)                 |
+| Frontend              | Next.js, Tailwind, TypeScript               |
+| Observability         | Prometheus, Grafana                         |
+| CI                    | GitHub Actions                              |
 
-- Git, Poetry (Python deps), Ruff/Black (linting), pytest.
-- Optional future: Rust services for perf-critical parts (embeddings/indexing).
+## Known limitations
 
-**Why this stack?** Balances rapid development with deep infra learning (DB ops, observability, orchestration, polyglot potential). Fully open-source and self-hostable.
-
----
-
-### Approximate Build Time (Solo, Part-Time/Full Focus)
-
-**Total Estimated**: 8–14 weeks (realistic, high-quality, iterative). No rush—focus on excellence.
-
-- **Phase 1 (MVP)**: 2–3 weeks (core ingestion + basic chat).
-- **Phase 2 (Evolution + Hybrid)**: 3–4 weeks (graph, agents, updates).
-- **Phase 3 (Polish + Infra)**: 2–4 weeks (UI/UX, monitoring, evaluation, optimizations).
-- **Buffer & Iteration**: 1–3 weeks (testing, refinements, documentation).
-
-This assumes deep dives into components (e.g., custom chunking, hybrid retriever tuning). We can accelerate or slow down based on your schedule.
-
-**Success Metrics**:
-
-- Personal daily usage with high satisfaction.
-- Portfolio-worthy: Clean repo, blog posts, metrics showing improvements over naive RAG.
-- Extensible & production-grade patterns.
-
----
-
-
+- No hosted deployment yet, local Docker Compose only
+- Web-upload chunking (Python) is simpler than the Rust CLI's chunker, not yet feature-parity
+- No password reset, email verification, or LLM-call rate limiting
+- Single-instance Postgres, no backups or read replicas
