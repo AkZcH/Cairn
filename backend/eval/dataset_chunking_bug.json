@@ -1,0 +1,22 @@
+[
+  {
+    "question": "What database technology does Cairn use for vector storage?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "What embedding model does Cairn use?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "What LLM providers does Cairn support?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "Does Cairn use a knowledge graph?",
+    "relevant_titles": ["PRD.md"]
+  },
+  {
+    "question": "What tools does Cairn use for linting and testing?",
+    "relevant_titles": ["PRD.md"]
+  }
+]

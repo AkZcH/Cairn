@@ -1,0 +1,28 @@
+   Compiling cairn-ingest v0.1.0 (C:\Users\KIIT0001\Desktop\Personal Vault\Projects\Infra and SRE Projects\Cairn\ingest)
+warning: linker stdout: LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+  |
+  = note: `#[warn(linker_messages)]` on by default
+
+warning: `cairn-ingest` (lib test) generated 1 warning
+warning: `cairn-ingest` (example "embed_test") generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 12.96s
+     Running unittests src\lib.rs (target\debug\deps\cairn_ingest-ea9c7b1cacf716e5.exe)
+
+running 1 test
+test parser::tests::tight_list_items_stay_on_separate_lines ... FAILED
+
+failures:
+
+---- parser::tests::tight_list_items_stay_on_separate_lines stdout ----
+
+thread 'parser::tests::tight_list_items_stay_on_separate_lines' (26688) panicked at src\parser.rs:121:9:
+assertion failed: lines.contains(&"zephyrquartz widget for the garage")
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    parser::tests::tight_list_items_stay_on_separate_lines
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--lib`
