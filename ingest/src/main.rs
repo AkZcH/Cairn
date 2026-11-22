@@ -32,10 +32,10 @@ fn content_hash(raw: &str) -> String {
 }
 
 fn is_supported(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|e| e.to_str()),
-        Some("md") | Some("markdown") | Some("txt")
-    )
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .is_some_and(|e| matches!(e.as_str(), "md" | "markdown" | "txt"))
 }
 
 fn is_hidden(path: &Path) -> bool {
@@ -256,7 +256,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known gap: extension matching is case-sensitive, so NOTES.MD is skipped"]
     fn gap_extension_matching_is_case_insensitive() {
         assert!(is_supported(Path::new("NOTES.MD")));
         assert!(is_supported(Path::new("Readme.Txt")));
