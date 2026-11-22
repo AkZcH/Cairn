@@ -24,26 +24,29 @@
 
 ## What it is
 
-Cairn ingests markdown and plaintext notes, chunks them by structure rather than arbitrary character windows, embeds them locally with no GPU required, and answers questions using hybrid retrieval, full-text search fused with vector similarity, so it catches both exact terms and related concepts your notes never used the same words for. Every answer is grounded in retrieved passages with inline citations; if the notes don't cover something, Cairn says so instead of guessing.
+Cairn ingests Markdown and plaintext notes, chunks them by structure rather than arbitrary character windows, embeds them locally with no GPU required, and answers questions using hybrid retrieval, full-text search fused with vector similarity, so it catches both exact terms and related concepts your notes never used the same words for.
+
+Every answer is grounded in retrieved passages with inline citations. If the notes don't cover something, Cairn says so instead of guessing.
 
 ## Key Features
 
 **Retrieval**
 
-- Structure-aware chunking — splits on headings, not fixed windows, so retrieved context stays coherent
-- Hybrid search — Postgres full-text + pgvector cosine similarity, fused with Reciprocal Rank Fusion
-- Local embeddings — BAAI/bge-small-en-v1.5, run via `candle` in Rust, CPU-only, no cloud ML calls
+- Structure-aware chunking: splits on headings, not fixed windows, so retrieved context stays coherent
+- Hybrid search: PostgreSQL full-text + pgvector cosine similarity, fused using Reciprocal Rank Fusion
+- Local embeddings: `BAAI/bge-small-en-v1.5`, run via `candle` in Rust, CPU-only, no cloud ML calls
 
 **Ingestion**
 
-- Two paths: a Rust CLI for whole-folder, locally-embedded ingestion, and a web upload path (paste or drag-and-drop) with server-side embedding via `fastembed`, same model, same vector space
-- Edits update, not duplicate — re-ingesting a changed file replaces its old chunks rather than forking your knowledge base
-- Path-based document identity, content-hash change detection
+- Two paths: a Rust CLI for whole-folder, locally embedded ingestion, and a web upload path with server-side embedding via `fastembed`, using the same model and vector space
+- Edits update, not duplicate: re-ingesting a changed file replaces its old chunks rather than forking your knowledge base
+- Path-based document identity with content-hash change detection
 
 **Product**
 
-- Multi-tenant — real accounts, JWT auth for the web app, API keys for the CLI, data isolation verified with two separate real accounts, not assumed
-- Citation-grounded, multi-turn chat — conversations persist in Postgres indefinitely, with a bounded context window sent per LLM call
+- Multi-tenant: real accounts, JWT auth for the web app, API keys for the CLI, with data isolation verified using two separate real accounts
+- Citation-grounded, multi-turn chat: conversations persist in PostgreSQL indefinitely, with a bounded context window sent per LLM call
+- Citations show only the passages the answer actually references, so a "not covered" answer carries none. Upstream LLM rate limits are retried, then returned as a clean `429`
 - Next.js landing page and authenticated dashboard
 
 ## Retrieval Quality
@@ -57,26 +60,46 @@ Rather than claim hybrid retrieval works, it's measured. A [reproducible evaluat
 | Vector-only           | 1.00 ± 0.00     | 0.90 ± 0.00     |
 | **Hybrid**            | **1.00 ± 0.00** | **0.90 ± 0.00** |
 
-Both full-text modes score zero because Postgres's `plainto_tsquery` and `websearch_to_tsquery` AND every query term together by default (verified against PostgreSQL's own documentation), and natural-language questions rarely share every word with the passage that answers them. Vector search closes that gap by matching on meaning, not tokens; hybrid degrades gracefully to whichever signal actually has data.
+Both full-text modes score zero because PostgreSQL's `plainto_tsquery` and `websearch_to_tsquery` AND every query term together by default, and natural-language questions rarely share every word with the passage that answers them.
 
-This number is real, not aspirational: building the harness surfaced and fixed two genuine bugs, a markdown parser silently collapsing bullet lists into diluted, unfocused chunks, and a missing `ORDER BY` tiebreaker causing non-deterministic results near the retrieval limit. Full methodology, dataset, and findings in [`backend/eval/README.md`](backend/eval/README.md).
+Vector search closes that gap by matching on meaning, not tokens. Hybrid retrieval degrades gracefully to whichever signal actually has useful data.
+
+This number is real, not aspirational: building the harness surfaced and fixed two genuine bugs, a Markdown parser silently collapsing bullet lists into diluted, unfocused chunks, and a missing `ORDER BY` tiebreaker causing non-deterministic results near the retrieval limit.
+
+These numbers come from the full `dataset.json`, labeled against the author's personal notes, so they can't be reproduced from a clean checkout. The reproducible check is the CI dataset, containing only the README and PRD, evaluated over 3 runs:
+
+**Hybrid Recall@5: 1.00**  
+**Hybrid MRR: 1.00**
+
+That corpus is small and its ground truth is document-level, so treat it as a regression gate, not a quality claim.
+
+Full methodology, dataset, and findings are documented in [`backend/eval/README.md`](backend/eval/README.md).
 
 ## Architecture
 
-┌─────────────┐ ┌──────────────┐ ┌─────────────────┐ ┌──────────────┐
-│ ingest/ │────▶│ backend/ │◀───▶│ db/ │ │ frontend/ │
-│ Rust binary │ │ FastAPI │ │ Postgres + │ │ Next.js │
-│ parse+chunk │ │ auth, search,│ │ pgvector │ │ landing page │
-│ +embed, │ │ chat (Groq) │ │ │ │ + dashboard │
-│ HTTP upload │ │ │ │ │ │ │
-└─────────────┘ └──────────────┘ └─────────────────┘ └──────────────┘
+```text
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐     ┌──────────────┐
+│   ingest/   │────▶│   backend/   │◀───▶│       db/       │     │  frontend/   │
+│ Rust binary │     │   FastAPI    │     │ PostgreSQL +    │     │   Next.js    │
+│ parse+chunk │     │ auth, search,│     │    pgvector     │     │ landing page │
+│ +embed,     │     │ chat (Groq)  │     │                 │     │ + dashboard  │
+│ HTTP upload │     │              │     │                 │     │              │
+└─────────────┘     └──────────────┘     └─────────────────┘     └──────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │    infra/    │
+                    │ Prometheus + │
+                    │   Grafana    │
+                    └──────────────┘
+```
 
-- **`ingest/`** — Rust CLI. Parses markdown/plaintext, chunks by section, embeds locally via `candle`, uploads to the backend over an authenticated API, not a direct DB connection.
-- **`backend/`** — FastAPI service. Auth, hybrid retrieval, citation-grounded chat, conversation history, document upload/intake.
-- **`db/`** — SQL migrations for the full schema, plus a small dependency-free migration runner.
-- **`frontend/`** — Next.js landing page and authenticated dashboard.
-- **`eval/`** — Reproducible retrieval evaluation harness (see [Retrieval Quality](#retrieval-quality)).
-- **`infra/`** — Docker Compose wiring Postgres + backend together.
+- **`ingest/`**: Rust CLI. Parses Markdown/plaintext, chunks by section, embeds locally via `candle`, and uploads to the backend over an authenticated API, not a direct database connection.
+- **`backend/`**: FastAPI service. Auth, hybrid retrieval, citation-grounded chat, conversation history, and document upload/intake.
+- **`db/`**: SQL migrations for the full schema, plus a small dependency-free migration runner.
+- **`frontend/`**: Next.js landing page and authenticated dashboard.
+- **`backend/eval/`**: Reproducible retrieval evaluation harness.
+- **`infra/`**: Docker Compose wiring PostgreSQL, the backend, Prometheus and Grafana.
 
 ## Tech Stack
 
@@ -88,12 +111,13 @@ This number is real, not aspirational: building the harness surfaced and fixed t
 | LLM                         | Groq (`openai/gpt-oss-20b`)                              |
 | Query/web-upload embeddings | `fastembed` (ONNX, same model as the Rust path)          |
 | Frontend                    | Next.js, Tailwind, TypeScript                            |
+| Observability               | Prometheus, Grafana                                      |
 
 ## Quickstart
 
 ```bash
 cp infra/.env.example infra/.env
-# fill in GROQ_API_KEY (console.groq.com) and a real JWT_SECRET (openssl rand -hex 32)
+# Fill in GROQ_API_KEY (console.groq.com) and a real JWT_SECRET (openssl rand -hex 32)
 
 cd infra
 docker compose up --build -d
@@ -108,7 +132,19 @@ curl -X POST http://localhost:8000/auth/signup \
   -d '{"email": "you@example.com", "password": "a-real-password"}'
 ```
 
-Save the returned `api_key` into `ingest/.env` (see `ingest/.env.example`), download the embedding model (see `ingest/models/README.md`), then ingest a folder:
+Save the returned `api_key` into `ingest/.env` as described in `ingest/.env.example`.
+
+Download `BAAI/bge-small-en-v1.5` (`config.json`, `tokenizer.json`, `model.safetensors`) from Hugging Face into the per-user data directory the CLI checks:
+
+```text
+%APPDATA%\cairn\models\bge-small-en-v1.5
+```
+
+on Windows.
+
+If the files are missing, the CLI prints the exact path it expects.
+
+Then ingest a folder:
 
 ```bash
 cd ingest
@@ -125,19 +161,25 @@ npm run dev
 
 ## API Reference
 
-All routes except `/auth/*` and `/health` require `Authorization: Bearer <token>` (JWT for browser/dashboard use, API key for the CLI).
+All routes except `/auth/*` and `/health` require:
 
-| Method | Path                           | Purpose                                                       |
-| ------ | ------------------------------ | ------------------------------------------------------------- |
-| `POST` | `/auth/signup`                 | Create an account, returns a JWT and a one-time API key       |
-| `POST` | `/auth/login`                  | Returns a JWT                                                 |
-| `GET`  | `/search?q=...`                | Hybrid retrieval, returns ranked chunks                       |
-| `POST` | `/chat`                        | Citation-grounded answer, creates or continues a conversation |
-| `GET`  | `/conversations`               | List a user's conversations                                   |
-| `GET`  | `/conversations/{id}/messages` | Full message history for one conversation                     |
-| `POST` | `/upload/text`                 | Paste-and-ingest raw text (server-side embedding)             |
-| `POST` | `/upload/file`                 | Drag-and-drop `.md`/`.txt` upload (server-side embedding)     |
-| `POST` | `/documents/upload`            | CLI intake — pre-chunked, pre-embedded content (API key only) |
+```text
+Authorization: Bearer <token>
+```
+
+JWTs are used for browser/dashboard access, while API keys are used by the CLI.
+
+| Method | Path                           | Purpose                                                        |
+| ------ | ------------------------------ | -------------------------------------------------------------- |
+| `POST` | `/auth/signup`                 | Create an account, returns a JWT and a one-time API key        |
+| `POST` | `/auth/login`                  | Returns a JWT                                                  |
+| `GET`  | `/search?q=...`                | Hybrid retrieval, returns ranked chunks                        |
+| `POST` | `/chat`                        | Citation-grounded answer, creates or continues a conversation  |
+| `GET`  | `/conversations`               | List a user's conversations                                    |
+| `GET`  | `/conversations/{id}/messages` | Full message history for one conversation                      |
+| `POST` | `/upload/text`                 | Paste-and-ingest raw text with server-side embedding           |
+| `POST` | `/upload/file`                 | Drag-and-drop `.md`/`.txt` upload with server-side embedding   |
+| `POST` | `/documents/upload`            | CLI intake for pre-chunked, pre-embedded content, API key only |
 
 Example:
 
@@ -150,13 +192,16 @@ curl -X POST http://localhost:8000/chat \
 
 ## Project Structure
 
+```text
 Cairn/
-├── ingest/ # Rust CLI — parse, chunk, embed, upload
-├── backend/ # FastAPI — auth, retrieval, chat, upload
-├── db/ # SQL migrations + migration runner
-├── frontend/ # Next.js landing page + dashboard
-├── eval/ # Retrieval evaluation harness (see backend/eval/)
-└── infra/ # Docker Compose
+├── ingest/           # Rust CLI: parse, chunk, embed, upload
+├── backend/          # FastAPI: auth, retrieval, chat, upload
+├── db/               # SQL migrations + migration runner
+├── frontend/         # Next.js landing page + dashboard
+└── infra/            # Docker Compose: PostgreSQL, backend, Prometheus, Grafana
+```
+
+The retrieval evaluation harness lives under `backend/eval/`.
 
 ## Development
 
@@ -166,16 +211,37 @@ Run the retrieval evaluation harness:
 docker compose exec backend python -m eval.run_eval --email you@example.com --runs 5
 ```
 
-Rust unit coverage lives alongside the parser/chunker (`ingest/src/`); run with `cargo test` from `ingest/`.
+Rust tests: the Markdown parser has a regression test for tight-list chunking (`ingest/src/parser.rs`); the chunker has none yet. Run with:
 
-Add a schema change as a new numbered file in `db/migrations/`, then run `python db/run_migrations.py` inside the backend container, migrations are tracked and idempotent.
+```bash
+cd ingest
+cargo test
+```
+
+CI runs the evaluation against the checked-in corpus containing the README and PRD:
+
+```bash
+python -m eval.seed_ci
+python -m eval.run_eval --email ci-eval@cairn.local --dataset dataset_ci.json --runs 3 --min-recall 0.9
+```
+
+Add a schema change as a new numbered file in `db/migrations/`, then run:
+
+```bash
+python db/run_migrations.py
+```
+
+inside the backend container. Migrations are tracked and idempotent.
 
 ## Known Limitations & Roadmap
 
-- No CI pipeline yet — the eval harness runs manually, not on push
-- No hosted deployment — local Docker Compose only
-- Web-upload chunking (Python) is simpler than the Rust CLI's structure-aware chunker — paragraph-based, not yet feature-parity
-- Single-region, single-instance Postgres — no read replicas, no backup automation
+- CI runs the retrieval eval on every push, but only against the README and PRD (`dataset_ci.json`). The full dataset depends on personal notes and can't be reproduced from a clean checkout
+- Rust test coverage is thin: one regression test for the Markdown parser, none for the chunker
+- Document identity is the canonical absolute path, so moving a notes folder re-ingests it as new documents and leaves the old ones behind
+- Web-upload chunking (Python) is simpler than the Rust CLI's structure-aware chunker, paragraph-based and not yet feature-parity
+- No password reset, email verification, or per-user rate limiting on LLM calls
+- No hosted deployment, local Docker Compose only
+- Single-region, single-instance PostgreSQL, no read replicas, no backup automation
 
 ## License
 
