@@ -22,7 +22,7 @@ struct UploadPayload {
     chunks: Vec<ChunkPayload>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 pub struct UploadResponse {
     pub document_id: Uuid,
     pub status: String, // "inserted" | "updated" | "unchanged"
