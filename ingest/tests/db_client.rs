@@ -253,7 +253,6 @@ async fn connection_refused_is_an_error() {
 }
 
 #[tokio::test]
-#[ignore = "known gap: a trailing slash in CAIRN_API_URL produces //documents/upload and a 404"]
 async fn gap_base_url_trailing_slash_is_tolerated() {
     let server = server_with(reply("inserted")).await;
     let client = ApiClient::new(format!("{}/", server.uri()), "k".into());
