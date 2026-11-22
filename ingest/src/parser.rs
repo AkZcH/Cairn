@@ -81,7 +81,9 @@ pub fn parse_markdown(raw: &str) -> Vec<Section> {
 /// Fallback for plain text (no markdown structure): blank-line-separated
 /// blocks become sections, all with `heading: None`.
 pub fn parse_plaintext(raw: &str) -> Vec<Section> {
-    raw.split("\n\n")
+    let normalized = raw.replace("\r\n", "\n");
+    normalized
+        .split("\n\n")
         .map(|block| block.trim())
         .filter(|block| !block.is_empty())
         .map(|block| Section {
@@ -426,7 +428,6 @@ The marker phrase is flibbertigibbet-7731.
     }
 
     #[test]
-    #[ignore = "known gap: parse_plaintext splits on \"\\n\\n\" only, so CRLF files stay one section"]
     fn gap_plaintext_crlf_paragraphs_split() {
         assert_eq!(parse_plaintext("a\r\n\r\nb").len(), 2);
     }
