@@ -14,7 +14,7 @@ def get_model() -> TextEmbedding:
     if _model is None:
         with _model_lock:
             if _model is None:  # re-check: another thread may have loaded it while we waited
-                _model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+                _model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5", threads=1)
     return _model
 
 def embed_query(text: str) -> list[float]:
