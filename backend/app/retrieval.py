@@ -1,4 +1,5 @@
 from uuid import UUID
+import asyncio
 
 from app.db import get_pool
 from app.embedder import embed_query, to_pgvector_literal
@@ -10,7 +11,7 @@ from app.observability import retrieval_duration_seconds
 async def hybrid_search(user_id: UUID, query: str, limit: int = 10) -> list[dict]:
     start = time.perf_counter()
     pool = await get_pool()
-    query_embedding = embed_query(query)
+    query_embedding = await asyncio.to_thread(embed_query, query)
     embedding_literal = to_pgvector_literal(query_embedding)
 
     rows = await pool.fetch(

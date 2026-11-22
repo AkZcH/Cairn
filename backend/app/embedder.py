@@ -1,13 +1,20 @@
-from fastembed import TextEmbedding
+import threading
 import time
+
+from fastembed import TextEmbedding
+
 from app.observability import embedding_duration_seconds
 
 _model: TextEmbedding | None = None
+_model_lock = threading.Lock()
+
 
 def get_model() -> TextEmbedding:
     global _model
     if _model is None:
-        _model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        with _model_lock:
+            if _model is None:  # re-check: another thread may have loaded it while we waited
+                _model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
     return _model
 
 def embed_query(text: str) -> list[float]:

@@ -9,11 +9,14 @@ from app.api.documents import router as documents_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.upload import router as upload_router
 from prometheus_fastapi_instrumentator import Instrumentator
+from app.embedder import get_model
+import asyncio
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await get_pool()
+    await asyncio.to_thread(get_model)
     yield
     await close_pool()
 
