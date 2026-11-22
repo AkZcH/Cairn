@@ -90,3 +90,36 @@ pub fn parse_plaintext(raw: &str) -> Vec<Section> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A TIGHT list (no blank lines between items) emits Item events but no
+    // Paragraph events, which is what the old code failed to split on.
+    const TIGHT_LIST: &str = "\
+# Gadgets
+
+## Shopping list
+- zephyrquartz widget for the garage
+- obsidian-lamp for the study
+- plain notebook
+
+## Misc
+The marker phrase is flibbertigibbet-7731.
+";
+
+    #[test]
+    fn tight_list_items_stay_on_separate_lines() {
+        let sections = parse_markdown(TIGHT_LIST);
+        let shopping = sections
+            .iter()
+            .find(|s| s.content.contains("zephyrquartz")) // CHECK field name
+            .expect("shopping list section should exist");
+
+        let lines: Vec<&str> = shopping.content.lines().map(str::trim).collect();
+        assert!(lines.contains(&"zephyrquartz widget for the garage"));
+        assert!(lines.contains(&"obsidian-lamp for the study"));
+        assert!(lines.contains(&"plain notebook"));
+    }
+}
