@@ -211,12 +211,7 @@ Run the retrieval evaluation harness:
 docker compose exec backend python -m eval.run_eval --email you@example.com --runs 5
 ```
 
-Rust tests: the Markdown parser has a regression test for tight-list chunking (`ingest/src/parser.rs`); the chunker has none yet. Run with:
-
-```bash
-cd ingest
-cargo test
-```
+Rust tests cover the markdown parser, chunker, file discovery, the pipeline and the HTTP client (about 80 tests, run in CI). Tests that need the embedding model files are marked `#[ignore]`; run them locally with `cargo test -- --ignored`.
 
 CI runs the evaluation against the checked-in corpus containing the README and PRD:
 
@@ -236,7 +231,7 @@ inside the backend container. Migrations are tracked and idempotent.
 ## Known Limitations & Roadmap
 
 - CI runs the retrieval eval on every push, but only against the README and PRD (`dataset_ci.json`). The full dataset depends on personal notes and can't be reproduced from a clean checkout
-- Rust test coverage is thin: one regression test for the Markdown parser, none for the chunker
+- Model-dependent Rust tests don't run in CI because the embedding model files aren't available there
 - Document identity is the canonical absolute path, so moving a notes folder re-ingests it as new documents and leaves the old ones behind
 - Web-upload chunking (Python) is simpler than the Rust CLI's structure-aware chunker, paragraph-based and not yet feature-parity
 - No password reset, email verification, or per-user rate limiting on LLM calls
