@@ -21,3 +21,7 @@ half = "=2.4.1"
 dirs = "5"
 dotenvy = "0.15"
 walkdir = "2"
+
+[dev-dependencies]
+wiremock = "0.6"
+tempfile = "3"
