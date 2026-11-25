@@ -1,5 +1,6 @@
 import hashlib
 from uuid import UUID, uuid4
+import asyncio
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -56,7 +57,7 @@ async def _ingest_text(user_id: UUID, source_path: str, title: str, raw: str) ->
 
     for i, chunk in enumerate(chunks):
         content = f"{chunk['heading']}\n\n{chunk['content']}" if chunk["heading"] else chunk["content"]
-        embedding_literal = to_pgvector_literal(embed_text(content))
+        embedding_literal = to_pgvector_literal( await asyncio.to_thread(embed_text, content))
         await pool.execute(
             """INSERT INTO chunks (document_id, chunk_index, content, embedding)
                VALUES ($1, $2, $3, $4::vector)
